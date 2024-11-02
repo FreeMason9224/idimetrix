@@ -1,57 +1,66 @@
 name: Metrics
+
 on:
-  # Schedule daily updates
   schedule: [{ cron: "0 0 * * *" }]
   workflow_dispatch:
-  # (optional) Run workflow when pushing on main
   push: { branches: ["main"] }
+
 jobs:
   github-metrics:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - uses: lowlighter/metrics@latest
         with:
           token: ${{ secrets.METRICS_TOKEN }}
           user: idimetrix
           config_timezone: America/New_York
-          #          config_display: columns  # display information in columns
           committer_message: "chore: update metrics"
           template: classic
-          base: header, activity, community, repositories, metadata # base content (user information)
-          plugin_introduction: yes # general account information
-          #          plugin_sponsors: yes
-
-          plugin_isocalendar: yes # 3D isometric calendar
-          plugin_isocalendar_duration: full-year # displays activity for the full year
-
-          plugin_languages: yes # display programming languages used
-          plugin_languages_details: bytes-size, percentage # additional code information: size and percentage
-
+          base: header, activity, community, repositories, metadata
+          plugin_introduction: yes
+          plugin_isocalendar: yes
+          plugin_isocalendar_duration: full-year
+          plugin_languages: yes
+          plugin_languages_details: bytes-size, percentage
           plugin_achievements: yes
-
-          plugin_achievements_threshold: X # shows achievement badges not yet unlocked
-          plugin_achievements_display: detailed # detailed description of achievement badges
-
-          plugin_calendar: yes # displays activity by years, starting from the current year onward
-          plugin_calendar_limit: 11 # shows activity for this many years
-
-          plugin_habits: yes # daily and weekly activity
-          plugin_habits_facts: yes # displays analysis of weekly activity
-          plugin_habits_charts: yes # displays characteristics
-
-          plugin_licenses: yes # license information
-          plugin_licenses_setup: npm ci # detailed information about licenses used
-
-          plugin_skyline: yes # 3D skyline activity plugin
-          plugin_skyline_year: 2022 # for which year
-          plugin_skyline_frames: 120 # number of frames
-          plugin_skyline_quality: 1 # quality level 1 - best
-
-          plugin_stargazers: yes # monthly activity
-          plugin_stargazers_charts_type: chartist # activity type - smooth lines
-
-          plugin_support: yes # support plugin
-
-          plugin_topics: yes # plugin for used topics
+          plugin_achievements_threshold: X
+          plugin_achievements_display: detailed
+          plugin_calendar: yes
+          plugin_calendar_limit: 11
+          plugin_habits: yes
+          plugin_habits_facts: yes
+          plugin_habits_charts: yes
+          plugin_licenses: yes
+          plugin_licenses_setup: npm ci
+          plugin_skyline: yes
+          plugin_skyline_year: 2022
+          plugin_skyline_frames: 120
+          plugin_skyline_quality: 1
+          plugin_stargazers: yes
+          plugin_stargazers_charts_type: chartist
+          plugin_support: yes
+          plugin_topics: yes
           plugin_topics_limit: 0
           plugin_topics_mode: icons
+
+      - name: Commit & Push
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add -A .
+          git commit -m "generated"
+          git push
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "The workflow has failed."
